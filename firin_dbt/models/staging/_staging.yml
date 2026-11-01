@@ -1,0 +1,154 @@
+version: 2
+
+models:
+  - name: stg_firin_satislari
+    description: >
+      Temizlenmiş fırın satış verisi. Her satır bir siparişteki bir ürün kalemidir
+      (siparis_id + urun_adi tekildir). Sütunlar Türkçe adlandırılmış, para ve yüzde
+      sütunları DECIMAL'e çevrilmiş, boş festival/promosyon değerleri doldurulmuştur.
+      Kategori değerleri kaynaktaki gibi İngilizcedir.
+    columns:
+      # Kimlikler
+      - name: siparis_kalem_id
+        description: Satırın tekil anahtarı; siparis_id ve urun_adi'ndan üretilen md5 özeti.
+        data_tests:
+          - unique
+          - not_null
+      - name: siparis_id
+        description: Sipariş numarası. Bir sipariş birden fazla ürün kalemi içerebilir.
+        data_tests:
+          - not_null
+      - name: musteri_id
+        description: Müşteri numarası.
+        data_tests:
+          - not_null
+      - name: magaza_id
+        description: Siparişin verildiği mağaza.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['ST01', 'ST02', 'ST03']
+
+      # Müşteri
+      - name: musteri_yasi
+        description: Müşterinin yaşı.
+      - name: musteri_cinsiyeti
+        description: Müşterinin cinsiyeti.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Female', 'Male', 'Other']
+      - name: musteri_segmenti
+        description: Müşteri segmenti.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Family', 'Senior Citizen', 'Student', 'Young Professional']
+      - name: sadakat_uyesi_mi
+        description: Müşteri sadakat programı üyesi mi (true/false).
+
+      # Zaman
+      - name: siparis_tarihi
+        description: Siparişin tarihi.
+        data_tests:
+          - not_null
+      - name: siparis_saati
+        description: Siparişin saati (ss:dd).
+      - name: siparis_zamani
+        description: Sipariş tarihi ve saatinin birleşimi.
+      - name: yil
+        description: Sipariş yılı.
+      - name: ay
+        description: Sipariş ayı (1-12).
+      - name: gun
+        description: Ayın günü (1-31).
+      - name: haftanin_gunu
+        description: Haftanın günü (Monday-Sunday).
+      - name: hafta_sonu_mu
+        description: Sipariş hafta sonu mu verildi (Cumartesi/Pazar).
+      - name: saat
+        description: Siparişin saat dilimi (7-21).
+      - name: mevsim
+        description: Mevsim (Winter, Summer, Monsoon, Autumn).
+      - name: festival
+        description: O günkü festival; festival olmayan günlerde 'No Festival'.
+        data_tests:
+          - not_null
+
+      # Hava
+      - name: hava_durumu
+        description: O günkü hava durumu.
+      - name: sicaklik
+        description: O günkü sıcaklık (°C).
+
+      # Ürün
+      - name: urun_adi
+        description: Satılan ürün (35 farklı ürün).
+        data_tests:
+          - not_null
+      - name: kategori
+        description: Ürün kategorisi.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Beverages', 'Bread & Daily', 'Cakes', 'Dairy & Spreads', 'Indian Bakery', 'Pastry & Sweet', 'Savoury Bakery']
+      - name: raf_omru_gun
+        description: Ürünün raf ömrü (gün). Aynı ürün için partiden partiye değişebilir.
+      - name: saklama_tipi
+        description: Saklama koşulu (Dry Storage, Refrigerated, Room Temperature).
+      - name: bozulabilirlik
+        description: Ürünün bozulma hızı (Low, Medium, High, Very High).
+
+      # Satış ve fiyat
+      - name: adet
+        description: Bu kalemde satılan ürün adedi.
+      - name: birim_fiyat
+        description: İndirim öncesi birim fiyat.
+      - name: birim_maliyet
+        description: Ürünün birim maliyeti.
+      - name: indirim_orani
+        description: Uygulanan indirim yüzdesi (14.7 = %14.7).
+      - name: satis_fiyati
+        description: İndirim sonrası birim satış fiyatı (birim_fiyat * (1 - indirim_orani/100)).
+      - name: toplam_tutar
+        description: Bu kalemin tutarı (satis_fiyati * adet). Siparişin toplamı değil, kalemin toplamıdır.
+      - name: kar
+        description: Bu kalemden elde edilen kâr ((satis_fiyati - birim_maliyet) * adet).
+      - name: odeme_yontemi
+        description: Ödeme yöntemi.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Card', 'Cash', 'UPI', 'Wallet']
+      - name: promosyon_uygulandi_mi
+        description: Bu kaleme promosyon uygulandı mı (true/false).
+      - name: promosyon_tipi
+        description: Promosyon tipi; promosyon yoksa 'No Promotion'.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Clearance', 'Combo', 'Festival', 'Flash Sale', 'Weekend', 'No Promotion']
+      - name: musteri_puani
+        description: Müşterinin verdiği puan (1-5).
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
+                quote: false
+
+      # Stok ve fire
+      - name: uretilen_adet
+        description: Ürünün üretilen adedi. Satıra ait stok bilgisidir; satırlar arasında toplanmamalıdır.
+      - name: satilan_adet
+        description: Ürünün satılan adedi (her zaman adet'e eşit veya büyük). Satırlar arasında toplanmamalıdır.
+      - name: satilmayan_adet
+        description: Satılmayan adet (uretilen_adet - satilan_adet).
+      - name: mevcut_stok
+        description: Kalan stok adedi.
+      - name: fire_orani
+        description: Fire yüzdesi (satilmayan_adet / uretilen_adet * 100). Toplanmamalı, ortalaması alınmalıdır.
+
+      # Yükleme bilgisi
+      - name: _yuklenme_zamani
+        description: Ham verinin DuckDB'ye yüklendiği zaman.

@@ -1,0 +1,20 @@
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      scripts/load_raw_data.py ile CSV'den DuckDB'ye aktarılan ham veri.
+      Değerler kaynaktaki gibidir; temizlik staging katmanında yapılır.
+    schema: raw
+    tables:
+      - name: bakery_sales
+        description: >
+          Fırın satış verisi (2023-01-01 ile 2024-12-31 arası, 3 mağaza). Her satır bir
+          siparişteki bir ürün kalemidir. Kaynak: data/raw/bakery_sales_dataset.csv
+        columns:
+          - name: Order_ID
+            data_tests:
+              - not_null
+          - name: Product
+            data_tests:
+              - not_null

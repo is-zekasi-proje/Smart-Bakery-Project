@@ -1,0 +1,29 @@
+name: 'firin_dbt'
+version: '1.0.0'
+
+# Veritabanı bağlantısı bu klasördeki profiles.yml dosyasındaki "firin_dbt" profilinden okunur.
+profile: 'firin_dbt'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Katman ayarları: her klasör DuckDB'de kendi şemasına yazılır.
+models:
+  firin_dbt:
+    staging:
+      +schema: staging
+      +materialized: view
+    marts:
+      +schema: marts
+      +materialized: table
+      # Her mart tablosu Power BI ve Python'da kullanılmak üzere Parquet dosyası olarak da yazılır
+      # (bkz. macros/parquet_olarak_disa_aktar.sql).
+      +post-hook: "{{ parquet_olarak_disa_aktar(this) }}"

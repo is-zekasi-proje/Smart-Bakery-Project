@@ -1,0 +1,15 @@
+version: 2
+
+data_tests:
+  - name: assert_tutar_ve_kar_tutarli
+    description: >
+      İş kuralı: her kalemde toplam_tutar = satis_fiyati * adet ve
+      kar = toplam_tutar - toplam_maliyet olmalıdır.
+  - name: assert_fct_staging_mutabakati
+    description: >
+      Mutabakat: fct_satislar ile staging aynı satır sayısına ve ciroya sahip olmalıdır
+      (dönüşümde satır kaybı veya çoğalması yok).
+  - name: assert_musteri_harcamasi_mutabakati
+    description: >
+      Mutabakat: dim_musteriler'deki toplam harcama ve sipariş sayısı fct_satislar ile
+      aynı olmalıdır (müşteri özetinde join kaynaklı çoğalma yok).

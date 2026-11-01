@@ -1,0 +1,10 @@
+# dbt'nin DuckDB veritabanına bağlantısı.
+# dbt komutları firin_dbt/ klasörünün içinden çalıştırılmalıdır; yol bu klasöre göredir.
+firin_dbt:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ../data/bakery.duckdb
+      schema: main
+      threads: 4

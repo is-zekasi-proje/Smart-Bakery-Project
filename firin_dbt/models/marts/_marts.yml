@@ -1,0 +1,263 @@
+version: 2
+
+models:
+  # ---------------------------------------------------------------- Olgu tablosu
+  - name: fct_satislar
+    description: >
+      Satış olgu tablosu. Her satır bir siparişteki bir ürün kalemidir. Ciro, kâr ve
+      indirim analizlerinin ana tablosudur. dim_musteriler (musteri_id), dim_urunler
+      (urun_adi) ve dim_tarih (siparis_tarihi) ile bağlanır.
+    columns:
+      - name: siparis_kalem_id
+        description: Satırın tekil anahtarı (siparis_id + urun_adi'ndan üretilen md5 özeti).
+        data_tests:
+          - unique
+          - not_null
+      - name: siparis_id
+        description: Sipariş numarası. Bir sipariş birden fazla kalem içerebilir.
+        data_tests:
+          - not_null
+      - name: musteri_id
+        description: Müşteri numarası; dim_musteriler tablosuna bağlanır.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_musteriler')
+                field: musteri_id
+      - name: urun_adi
+        description: Ürün adı; dim_urunler tablosuna bağlanır.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_urunler')
+                field: urun_adi
+      - name: siparis_tarihi
+        description: Sipariş tarihi; dim_tarih tablosuna bağlanır.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_tarih')
+                field: tarih
+      - name: magaza_id
+        description: Siparişin verildiği mağaza (ST01, ST02, ST03).
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['ST01', 'ST02', 'ST03']
+      - name: siparis_saati
+        description: Siparişin saati (ss:dd).
+      - name: siparis_zamani
+        description: Sipariş tarihi ve saatinin birleşimi.
+      - name: saat
+        description: Siparişin saat dilimi (7-21).
+      - name: odeme_yontemi
+        description: Ödeme yöntemi (sipariş düzeyinde sabit).
+      - name: promosyon_uygulandi_mi
+        description: Promosyon uygulandı mı (sipariş düzeyinde sabit).
+      - name: promosyon_tipi
+        description: Promosyon tipi; promosyon yoksa 'No Promotion'.
+      - name: musteri_puani
+        description: >
+          Müşterinin siparişe verdiği puan (1-5). Sipariş düzeyinde verilir; ortalama
+          alınırken siparişler tekilleştirilmelidir (bkz. dim_musteriler.ortalama_puan).
+        data_tests:
+          - deger_araliginda:
+              arguments:
+                min_deger: 1
+                max_deger: 5
+      - name: birim_fiyat
+        description: İndirim öncesi birim fiyat.
+      - name: birim_maliyet
+        description: Birim maliyet.
+      - name: indirim_orani
+        description: İndirim yüzdesi (14.7 = %14.7).
+        data_tests:
+          - deger_araliginda:
+              arguments:
+                min_deger: 0
+                max_deger: 100
+      - name: satis_fiyati
+        description: İndirim sonrası birim satış fiyatı.
+      - name: adet
+        description: Bu kalemde satılan ürün adedi.
+        data_tests:
+          - deger_araliginda:
+              arguments:
+                min_deger: 1
+      - name: brut_tutar
+        description: İndirim öncesi kalem tutarı (birim_fiyat * adet).
+      - name: indirim_tutari
+        description: İndirim ile düşülen tutar (brut_tutar - toplam_tutar).
+      - name: toplam_tutar
+        description: Kalemin net tutarı, yani ciro (satis_fiyati * adet).
+        data_tests:
+          - deger_araliginda:
+              arguments:
+                min_deger: 0
+      - name: toplam_maliyet
+        description: Kalemin toplam maliyeti (birim_maliyet * adet).
+      - name: kar
+        description: Kalemin kârı (toplam_tutar - toplam_maliyet). Çok küçük negatif değerler olabilir.
+      - name: raf_omru_gun
+        description: Ürünün raf ömrü (gün); partiden partiye değişebilir.
+      - name: uretilen_adet
+        description: Üretilen adet. Satıra ait stok bilgisidir; satırlar arasında toplanmamalıdır.
+      - name: satilan_adet
+        description: Satılan adet (her zaman adet'e eşit veya büyük). Toplanmamalıdır.
+      - name: satilmayan_adet
+        description: Satılmayan adet (uretilen_adet - satilan_adet).
+      - name: mevcut_stok
+        description: Kalan stok adedi.
+      - name: fire_orani
+        description: Fire yüzdesi (satilmayan_adet / uretilen_adet * 100). Toplanmamalı, ortalaması alınmalıdır.
+        data_tests:
+          - deger_araliginda:
+              arguments:
+                min_deger: 0
+                max_deger: 100
+
+  # ---------------------------------------------------------------- Müşteri boyutu
+  - name: dim_musteriler
+    description: >
+      Müşteri boyutu. Her satır bir müşteridir; demografik bilgiler ve satın alma
+      davranışı özeti (sipariş sayısı, harcama, yenilik) içerir. Müşteri segmentasyonu
+      veya churn modeli için temel tablodur.
+    columns:
+      - name: musteri_id
+        description: Müşteri numarası (tekil).
+        data_tests:
+          - unique
+          - not_null
+      - name: musteri_yasi
+        description: Müşterinin yaşı.
+        data_tests:
+          - deger_araliginda:
+              arguments:
+                min_deger: 0
+                max_deger: 120
+      - name: yas_grubu
+        description: Yaş grubu (16-24, 25-34, 35-44, 45-54, 55+). Verideki en küçük yaş 16'dır.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['16-24', '25-34', '35-44', '45-54', '55+']
+      - name: musteri_cinsiyeti
+        description: Müşterinin cinsiyeti (Female, Male, Other).
+      - name: musteri_segmenti
+        description: Müşteri segmenti (Family, Senior Citizen, Student, Young Professional).
+      - name: sadakat_uyesi_mi
+        description: Sadakat programı üyesi mi.
+      - name: ilk_siparis_tarihi
+        description: Müşterinin ilk sipariş tarihi.
+      - name: son_siparis_tarihi
+        description: Müşterinin son sipariş tarihi.
+      - name: son_siparisten_gecen_gun
+        description: >
+          Son siparişten verinin son gününe (2024-12-31) kadar geçen gün sayısı (yenilik / recency).
+          Bugünün tarihine göre değil, veri setinin son gününe göre hesaplanır.
+        data_tests:
+          - deger_araliginda:
+              arguments:
+                min_deger: 0
+      - name: siparis_sayisi
+        description: Müşterinin toplam sipariş sayısı (sıklık / frequency).
+        data_tests:
+          - deger_araliginda:
+              arguments:
+                min_deger: 1
+      - name: toplam_urun_adedi
+        description: Müşterinin satın aldığı toplam ürün adedi.
+      - name: toplam_harcama
+        description: Müşterinin toplam harcaması, indirim sonrası (parasal değer / monetary).
+      - name: toplam_kar
+        description: Müşteriden elde edilen toplam kâr.
+      - name: ortalama_sepet_tutari
+        description: Sipariş başına ortalama harcama.
+      - name: ortalama_puan
+        description: Müşterinin siparişlerine verdiği ortalama puan (sipariş bazında).
+
+  # ---------------------------------------------------------------- Ürün boyutu
+  - name: dim_urunler
+    description: >
+      Ürün boyutu. Her satır bir üründür; kategori ve saklama bilgileri ile satış,
+      kâr ve fire özetini içerir.
+    columns:
+      - name: urun_adi
+        description: Ürün adı (tekil).
+        data_tests:
+          - unique
+          - not_null
+      - name: kategori
+        description: Ürün kategorisi.
+        data_tests:
+          - not_null
+      - name: saklama_tipi
+        description: Saklama koşulu (Dry Storage, Refrigerated, Room Temperature).
+      - name: bozulabilirlik
+        description: Bozulma hızı (Low, Medium, High, Very High).
+      - name: ortalama_birim_fiyat
+        description: Ortalama indirim öncesi birim fiyat (fiyat satırdan satıra değişir).
+      - name: ortalama_birim_maliyet
+        description: Ortalama birim maliyet.
+      - name: ortalama_raf_omru_gun
+        description: Ortalama raf ömrü (gün).
+      - name: toplam_satis_adedi
+        description: Toplam satılan adet.
+      - name: toplam_ciro
+        description: Toplam ciro (indirim sonrası).
+      - name: toplam_kar
+        description: Toplam kâr.
+      - name: kar_marji
+        description: Kâr marjı yüzdesi (toplam_kar / toplam_ciro * 100).
+      - name: ortalama_fire_orani
+        description: Ortalama fire yüzdesi.
+        data_tests:
+          - deger_araliginda:
+              arguments:
+                min_deger: 0
+                max_deger: 100
+
+  # ---------------------------------------------------------------- Tarih boyutu
+  - name: dim_tarih
+    description: >
+      Takvim boyutu. Veri aralığındaki (2023-01-01 ile 2024-12-31 arası) her gün için bir satır;
+      mevsim, festival ve hava bilgisi gün düzeyinde burada tutulur.
+    columns:
+      - name: tarih
+        description: Gün (tekil).
+        data_tests:
+          - unique
+          - not_null
+      - name: yil
+        description: Yıl.
+      - name: ceyrek
+        description: Çeyrek (1-4).
+      - name: ay
+        description: Ay (1-12).
+      - name: ay_adi
+        description: Ay adı (January-December).
+      - name: gun
+        description: Ayın günü.
+      - name: haftanin_gunu
+        description: Haftanın günü (Monday-Sunday).
+      - name: haftanin_gunu_no
+        description: Haftanın günü numarası (1 = Pazartesi, 7 = Pazar); sıralama için.
+      - name: hafta_sonu_mu
+        description: Cumartesi veya Pazar mı.
+      - name: mevsim
+        description: Mevsim (Winter, Summer, Monsoon, Autumn).
+        data_tests:
+          - not_null
+      - name: festival
+        description: O günkü festival; yoksa 'No Festival'.
+      - name: festival_gunu_mu
+        description: O gün bir festival günü mü.
+      - name: hava_durumu
+        description: O günkü hava durumu.
+        data_tests:
+          - not_null
+      - name: sicaklik
+        description: O günkü sıcaklık (°C).

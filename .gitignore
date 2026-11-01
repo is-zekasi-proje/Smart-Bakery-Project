@@ -1,0 +1,16 @@
+# Python sanal ortamı
+.venv/
+__pycache__/
+
+# DuckDB veritabanı (scripts/load_raw_data.py ile yeniden üretilir)
+data/*.duckdb
+data/*.duckdb.wal
+
+# dbt çıktıları (dbt run / dbt docs generate ile yeniden üretilir)
+target/
+dbt_packages/
+logs/
+.user.yml
+
+# macOS
+.DS_Store
