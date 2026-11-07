@@ -38,17 +38,36 @@ MART_TABLES: Dict[str, Optional[str]] = {
     "dim_musteriler": "musteri_id",
     "dim_urunler": "urun_adi",
     "dim_tarih": "tarih",
+    "dim_musteri_rfm": "musteri_id",
     "fct_satislar": "siparis_kalem_id",
+    "fct_israf_ve_fire_analizi": "israf_kayit_id",
+    "fct_ideal_uretim_tavsiyesi": "tavsiye_id",
 }
 
-# fct_satislar için performans indeksleri
+# Tablolar için performans indeksleri
 TABLE_INDEXES: Dict[str, List[str]] = {
     "fct_satislar": [
         "siparis_tarihi",
         "musteri_id",
         "urun_adi",
         "magaza_id",
-    ]
+    ],
+    "fct_israf_ve_fire_analizi": [
+        "siparis_tarihi",
+        "magaza_id",
+        "urun_adi",
+    ],
+    "fct_ideal_uretim_tavsiyesi": [
+        "magaza_id",
+        "urun_adi",
+        "haftanin_gunu",
+    ],
+    "dim_musteri_rfm": [
+        "rfm_segmenti",
+        "r_skoru",
+        "f_skoru",
+        "m_skoru",
+    ],
 }
 
 

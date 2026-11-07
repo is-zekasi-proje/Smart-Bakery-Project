@@ -19,8 +19,17 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 TARGET_DIR = PROJECT_ROOT / "firin_dbt" / "target"
 DOCS_DIR = PROJECT_ROOT / "docs"
 
-# Sözlükteki tablo sırası: önce olgu, sonra boyutlar, en son staging.
-TABLO_SIRASI = ["fct_satislar", "dim_musteriler", "dim_urunler", "dim_tarih", "stg_firin_satislari"]
+# Sözlükteki tablo sırası: önce olgular, sonra boyutlar, en son staging.
+TABLO_SIRASI = [
+    "fct_satislar",
+    "fct_israf_ve_fire_analizi",
+    "fct_ideal_uretim_tavsiyesi",
+    "dim_musteriler",
+    "dim_musteri_rfm",
+    "dim_urunler",
+    "dim_tarih",
+    "stg_firin_satislari",
+]
 
 
 def test_etiketi(test: dict) -> str:
@@ -60,6 +69,7 @@ def main() -> None:
 
     # 2) Testleri sütunlara göre grupla
     sutun_testleri = defaultdict(list)
+    sutun_test_adlari = defaultdict(set)
     is_kurali_testleri = []
     for node in manifest["nodes"].values():
         if node["resource_type"] != "test":
@@ -67,6 +77,7 @@ def main() -> None:
         if node.get("test_metadata"):
             anahtar = (node["attached_node"], node["column_name"])
             sutun_testleri[anahtar].append(test_etiketi(node))
+            sutun_test_adlari[anahtar].add(node["test_metadata"]["name"])
         else:
             is_kurali_testleri.append(node)
 
@@ -102,6 +113,20 @@ def main() -> None:
             "",
             tek_satir(model["description"]),
             "",
+        ]
+        birincil_anahtarlar = [
+            sutun_adi
+            for sutun_adi in model["columns"]
+            if {"unique", "not_null"}.issubset(
+                sutun_test_adlari.get((model["unique_id"], sutun_adi), set())
+            )
+        ]
+        if birincil_anahtarlar:
+            satirlar += [
+                f"**Birincil anahtar:** {', '.join(f'`{sutun}`' for sutun in birincil_anahtarlar)}",
+                "",
+            ]
+        satirlar += [
             "| Sütun | Tip | Açıklama | Testler |",
             "|---|---|---|---|",
         ]
@@ -122,8 +147,10 @@ def main() -> None:
     for test in sorted(is_kurali_testleri, key=lambda t: t["name"]):
         satirlar.append(f"| `{test['name']}` | {tek_satir(test['description'])} |")
 
-    (DOCS_DIR / "veri_sozlugu.md").write_text("\n".join(satirlar) + "\n", encoding="utf-8")
-    print(f"Yazıldı: docs/dbt_docs.html ve docs/veri_sozlugu.md ({len(TABLO_SIRASI)} tablo)")
+    icerik = "\n".join(satirlar) + "\n"
+    (DOCS_DIR / "veri_sozlugu.md").write_text(icerik, encoding="utf-8")
+    (DOCS_DIR / "DATA_DICTIONARY.md").write_text(icerik, encoding="utf-8")
+    print(f"Yazıldı: docs/dbt_docs.html, docs/veri_sozlugu.md ve docs/DATA_DICTIONARY.md ({len(TABLO_SIRASI)} tablo)")
 
 
 if __name__ == "__main__":

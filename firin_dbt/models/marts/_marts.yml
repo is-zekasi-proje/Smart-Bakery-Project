@@ -261,3 +261,253 @@ models:
           - not_null
       - name: sicaklik
         description: O günkü sıcaklık (°C).
+
+  # ---------------------------------------------------------------- İsraf ve Fire Analizi
+  - name: fct_israf_ve_fire_analizi
+    description: >
+      SmartBakery 360 gıda israfı ve fire analizi tablosu. Mağaza, ürün ve tarih
+      bazında satılmayan adet, fire yüzdesi ve parasal fire maliyeti metriklerini hesaplar.
+    columns:
+      - name: israf_kayit_id
+        description: Tekil anahtar (magaza_id + urun_adi + siparis_tarihi md5 özeti).
+        data_tests:
+          - unique
+          - not_null
+      - name: magaza_id
+        description: Mağaza kodu (ST01, ST02, ST03).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['ST01', 'ST02', 'ST03']
+      - name: urun_adi
+        description: Ürün adı.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_urunler')
+                field: urun_adi
+      - name: siparis_tarihi
+        description: Satış ve israf tarihi.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_tarih')
+                field: tarih
+      - name: kategori
+        description: Ürün kategorisi.
+      - name: saklama_tipi
+        description: Saklama koşulu (Dry Storage, Refrigerated, Room Temperature).
+      - name: bozulabilirlik
+        description: Bozulma hızı seviyesi (Low, Medium, High, Very High).
+      - name: raf_omru_gun
+        description: Ürünün raf ömrü (gün).
+      - name: mevsim
+        description: Mevsim bilgisi.
+      - name: hava_durumu
+        description: Günlük hava durumu.
+      - name: uretilen_adet
+        description: Günlük üretilen toplam ürün adedi.
+      - name: satilan_adet
+        description: Günlük satılan ürün adedi.
+      - name: mevcut_stok
+        description: Gün sonu kalan mevcut stok adedi.
+      - name: satilmayan_adet
+        description: Gün sonunda satılamayan ve israf olan ürün adedi.
+        data_tests:
+          - not_null
+          - deger_araliginda:
+              arguments:
+                min_deger: 0
+      - name: fire_orani
+        description: Fire oranı yüzdesi (%0-100).
+        data_tests:
+          - not_null
+          - deger_araliginda:
+              arguments:
+                min_deger: 0
+                max_deger: 100
+      - name: birim_maliyet
+        description: Ürünün birim maliyeti.
+      - name: birim_fiyat
+        description: Ürünün liste satış fiyatı.
+      - name: fire_maliyeti
+        description: Parasal fire maliyeti (satılmayan_adet * birim_maliyet).
+        data_tests:
+          - not_null
+          - deger_araliginda:
+              arguments:
+                min_deger: 0
+      - name: potansiyel_ciro_kaybi
+        description: İsraf olan ürünlerin satılsaydı getireceği tahmini ciro kaybı (satılmayan_adet * birim_fiyat).
+
+  # ---------------------------------------------------------------- İdeal Üretim Tavsiyesi
+  - name: fct_ideal_uretim_tavsiyesi
+    description: >
+      SmartBakery 360 karar destek sistemi ideal günlük üretim tavsiyesi tablosu.
+      Mağaza, ürün ve haftanın günü bazında geçmiş satış ortalamasını ve bozulabilirlik
+      güvenlik payını kullanarak fırın ustasına tavsiye edilen ideal üretim miktarını belirler.
+    columns:
+      - name: tavsiye_id
+        description: Tekil anahtar (magaza_id + urun_adi + haftanin_gunu md5 özeti).
+        data_tests:
+          - unique
+          - not_null
+      - name: magaza_id
+        description: Mağaza kodu (ST01, ST02, ST03).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['ST01', 'ST02', 'ST03']
+      - name: urun_adi
+        description: Ürün adı.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_urunler')
+                field: urun_adi
+      - name: kategori
+        description: Ürün kategorisi.
+      - name: bozulabilirlik
+        description: Bozulma hızı seviyesi (Low, Medium, High, Very High).
+      - name: raf_omru_gun
+        description: Ortalama raf ömrü (gün).
+      - name: saklama_tipi
+        description: Saklama koşulu.
+      - name: haftanin_gunu
+        description: Haftanın günü.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+      - name: haftanin_gunu_no
+        description: Haftanın günü sıralama numarası (1 = Pazartesi, 7 = Pazar).
+      - name: hafta_sonu_mu
+        description: Hafta sonu mu (Cumartesi veya Pazar).
+      - name: gozlem_sayisi
+        description: Geçmiş veri setinde bu gün için yapılan toplam gün gözlemi sayısı.
+      - name: ortalama_gunluk_satis
+        description: Geçmiş ortalama günlük satış adedi.
+      - name: min_gunluk_satis
+        description: Geçmişte bu günde görülen en düşük satış adedi.
+      - name: max_gunluk_satis
+        description: Geçmişte bu günde görülen en yüksek satış adedi.
+      - name: ortalama_gecmis_fire_orani
+        description: Geçmiş ortalama fire yüzdesi.
+      - name: guvenlik_stogu_orani
+        description: Bozulabilirliğe göre dinamik güvenlik stoku tampon oranı (High=%5, Medium=%10, Low=%15).
+      - name: tavsiye_edilen_uretim_adedi
+        description: Fırın ustasına tavsiye edilen ideal günlük üretim adedi.
+        data_tests:
+          - not_null
+          - deger_araliginda:
+              arguments:
+                min_deger: 1
+      - name: ortalama_birim_maliyet
+        description: Ortalama birim maliyet.
+      - name: ortalama_birim_fiyat
+        description: Ortalama liste satış fiyatı.
+      - name: tahmini_uretim_maliyeti
+        description: Tavsiye edilen üretimin toplam tahmini maliyeti (tavsiye_edilen_uretim_adedi * ortalama_birim_maliyet).
+      - name: tahmini_potansiyel_ciro
+        description: Tavsiye edilen üretimin satılması halinde sağlayacağı tahmini ciro (tavsiye_edilen_uretim_adedi * ortalama_birim_fiyat).
+
+  # ---------------------------------------------------------------- Müşteri RFM Analizi
+  - name: dim_musteri_rfm
+    description: >
+      Müşteri Recency (Yenilik), Frequency (Sıklık) ve Monetary (Parasal Değer) analiz
+      tablosu. 500 müşterinin her birine 1-5 arası ntile puanları ve müşteri segmentasyonu atar.
+    columns:
+      - name: musteri_id
+        description: Müşteri numarası (tekil).
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_musteriler')
+                field: musteri_id
+      - name: musteri_yasi
+        description: Müşterinin yaşı.
+      - name: yas_grubu
+        description: Yaş grubu (16-24, 25-34, 35-44, 45-54, 55+).
+      - name: musteri_cinsiyeti
+        description: Müşterinin cinsiyeti (Female, Male, Other).
+      - name: musteri_segmenti
+        description: Müşteri segmenti (Family, Senior Citizen, Student, Young Professional).
+      - name: sadakat_uyesi_mi
+        description: Sadakat programı üyesi mi.
+      - name: ilk_siparis_tarihi
+        description: Müşterinin ilk sipariş tarihi.
+      - name: son_siparis_tarihi
+        description: Müşterinin son sipariş tarihi.
+      - name: son_siparisten_gecen_gun
+        description: Son siparişten bugüne (veya veri sonuna) kadar geçen gün sayısı (yenilik / recency).
+        data_tests:
+          - not_null
+          - deger_araliginda:
+              arguments:
+                min_deger: 0
+      - name: siparis_sayisi
+        description: Toplam sipariş sayısı (sıklık / frequency).
+        data_tests:
+          - not_null
+          - deger_araliginda:
+              arguments:
+                min_deger: 1
+      - name: toplam_harcama
+        description: Müşterinin toplam harcama tutarı (parasal değer / monetary).
+        data_tests:
+          - not_null
+          - deger_araliginda:
+              arguments:
+                min_deger: 0
+      - name: toplam_kar
+        description: Müşteriden elde edilen toplam net kâr.
+      - name: toplam_urun_adedi
+        description: Müşterinin satın aldığı toplam ürün adedi.
+      - name: ortalama_sepet_tutari
+        description: Sipariş başına ortalama harcama.
+      - name: ortalama_puan
+        description: Müşterinin siparişlerine verdiği ortalama puan.
+      - name: favori_odeme_yontemi
+        description: En çok tercih ettiği ödeme yöntemi.
+      - name: en_sik_gidilen_magaza
+        description: En sık alışveriş yaptığı mağaza kodu.
+      - name: r_skoru
+        description: Recency skoru (1-5; 5 en yeni).
+        data_tests:
+          - not_null
+          - deger_araliginda:
+              arguments:
+                min_deger: 1
+                max_deger: 5
+      - name: f_skoru
+        description: Frequency skoru (1-5; 5 en sık).
+        data_tests:
+          - not_null
+          - deger_araliginda:
+              arguments:
+                min_deger: 1
+                max_deger: 5
+      - name: m_skoru
+        description: Monetary skoru (1-5; 5 en çok harcayan).
+        data_tests:
+          - not_null
+          - deger_araliginda:
+              arguments:
+                min_deger: 1
+                max_deger: 5
+      - name: rfm_skoru
+        description: Üç haneli birleşik RFM skor metni (örn. '555', '321').
+      - name: rfm_ortalama_skor
+        description: R, F ve M skorlarının aritmetik ortalaması.
+      - name: rfm_segmenti
+        description: Müşteri RFM segment grubu.
+        data_tests:
+          - not_null

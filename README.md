@@ -11,17 +11,32 @@ Eğitmen onaylı fırın satış veri seti: `data/raw/bakery_sales_dataset.csv`
 19.321 satır (sipariş kalemi), 6.576 sipariş, 500 müşteri, 35 ürün ve 3 mağaza içerir; 2023-01-01 ile
 2024-12-31 arasını kapsar. Sütun açıklamaları `docs/veri_sozlugu.md` dosyasındadır.
 
-## Veri akışı
+## Veri akışı ve dbt Veri Ambarı Mimarisi
+
+Proje, dbt ile modellenen **toplam 8 modelden** (1 staging, 7 mart) oluşur:
 
 1. `scripts/load_raw_data.py`, CSV dosyasını DuckDB'deki `raw.bakery_sales` tablosuna yükler.
-2. dbt staging katmanı (`stg_firin_satislari`) sütunları yeniden adlandırır, tipleri düzeltir ve boş değerleri doldurur.
-3. dbt mart katmanı dört tablo üretir:
-   - `fct_satislar`: her satır bir sipariş kalemi
-   - `dim_musteriler`: müşteri bilgileri ve satın alma özeti
-   - `dim_urunler`: ürün bilgileri, satış ve fire özeti
-   - `dim_tarih`: takvim, mevsim, festival ve hava bilgisi
-4. Mart tabloları `data/marts/` klasörüne Parquet dosyası olarak yazılır (`dim_musteriler.parquet`, `dim_urunler.parquet`, `dim_tarih.parquet`, `fct_satislar.parquet`).
-5. `import_data.py` betiği ile Parquet/DuckDB mart verileri Docker üzerinde koşan PostgreSQL (`smartbakery_db`) veritabanına aktarılır.
+2. **dbt Staging Katmanı (`staging`)**:
+   - `stg_firin_satislari`: Ham fırın satış verilerini temizler, sütun adlarını standartlaştırır, tipleri dönüştürür ve boş değerleri doldurur.
+3. **dbt Mart Katmanı (`marts`)** - Toplam 7 Analitik Model:
+   - `fct_satislar`: Sipariş kalemi bazında satış olgu tablosu (19.321 satır). Ciro, net kâr ve indirim analizlerinin ana tablosudur.
+   - `fct_israf_ve_fire_analizi`: **(Yeni Mart Modeli)** SmartBakery 360 gıda israfı ve fire analizi olgu tablosu (16.563 satır).
+     - **İş Amacı:** Mağaza, ürün ve gün bazında unlu mamul israfını en aza indirmek, sürdürülebilirlik hedeflerini takip etmek ve finansal fire kaybını izlemek.
+     - **Hesaplanan Türkçe Metrikler:** `satilmayan_adet`, `fire_orani`, `birim_maliyet`, `birim_fiyat`, `fire_maliyeti`, `potansiyel_ciro_kaybi`.
+     - **Beslediği Superset/BI Grafikleri:** Günlük & Aylık Fire Maliyeti Trendi (Line Chart), Ürün/Kategori Bazlı Fire Dağılımı (Bar Chart), Bozulabilirlik Seviyesine Göre İsraf Oranı (Pie/Donut), Şube Bazlı İsraf Karşılaştırması.
+   - `fct_ideal_uretim_tavsiyesi`: **(Yeni Mart Modeli)** SmartBakery 360 karar destek sistemi ideal günlük üretim tavsiyesi tablosu (735 satır).
+     - **İş Amacı:** Ürün, mağaza ve haftanın günü bazında geçmiş satış ortalamalarını ve ürünün bozulabilirlik seviyesini analiz ederek fırın ustasına günlük ideal üretim adedi önerisinde bulunmak.
+     - **Hesaplanan Türkçe Metrikler:** `ortalama_gunluk_satis`, `min_gunluk_satis`, `max_gunluk_satis`, `ortalama_gecmis_fire_orani`, `guvenlik_stogu_orani` (High: %5, Medium: %10, Low: %15), `tavsiye_edilen_uretim_adedi`, `tahmini_uretim_maliyeti`, `tahmini_potansiyel_ciro`.
+     - **Beslediği Superset/BI Grafikleri:** Fırın Ustası Günlük Üretim Planlama Çizelgesi (Pivot Table), Gerçekleşen Satış vs. Tavsiye Edilen Üretim Karşılaştırma Grafiği (Dual-Axis Bar/Line), Güvenlik Stoku ve Maliyet Dağılımı.
+   - `dim_musteriler`: Müşteri demografik boyut tablosu (500 müşteri). Satın alma davranışı özeti (sipariş sayısı, toplam harcama, ortalama sepet vb.).
+   - `dim_musteri_rfm`: **(Yeni Mart Modeli)** Müşteri RFM (Recency, Frequency, Monetary) analiz ve segmentasyon tablosu (500 müşteri).
+     - **İş Amacı:** 500 müşterinin alışveriş sıklığı, harcama büyüklüğü ve son temas tarihine göre 1-5 arası ntile puanlamasını yaparak 9 farklı pazarlama segmentine ayırmak ve müşteri sadakatini artırmak.
+     - **Hesaplanan Türkçe Metrikler:** `son_siparisten_gecen_gun` (Yenilik / Recency), `siparis_sayisi` (Sıklık / Frequency), `toplam_harcama` (Parasal Değer / Monetary), `toplam_kar`, `r_skoru` (1-5), `f_skoru` (1-5), `m_skoru` (1-5), `rfm_skoru`, `rfm_ortalama_skor`, `rfm_segmenti` (Şampiyonlar, Sadık Müşteriler, Potansiyel Sadıklar, Yeni Müşteriler, Gelişime Açık, Kaybedilme Riski Yüksek, Dikkat Gerektirenler, Uykudaki Değerliler, Kayıp Müşteriler).
+     - **Beslediği Superset/BI Grafikleri:** RFM Müşteri Segmentleri Dağılımı (Treemap / Sunburst), Sadakat Üyeliği vs. RFM Skoru Dağılımı (Boxplot), Segment Başına Ortalama Ciro ve Kârlılık (Bar Chart).
+   - `dim_urunler`: Ürün boyutu (35 ürün). Kategori, raf ömrü, saklama tipi, ortalama fiyat/maliyet, toplam satış, ciro ve fire özeti.
+   - `dim_tarih`: Takvim boyutu (731 gün, 2023-2024). Mevsim, festival, tatil ve hava durumu bilgileri.
+4. Mart tabloları `data/marts/` klasörüne Parquet dosyası olarak yazılır (`dim_musteriler.parquet`, `dim_musteri_rfm.parquet`, `dim_urunler.parquet`, `dim_tarih.parquet`, `fct_satislar.parquet`, `fct_israf_ve_fire_analizi.parquet`, `fct_ideal_uretim_tavsiyesi.parquet`).
+5. `import_data.py` (veya `scripts/import_data.py`) betiği ile Parquet mart verileri Docker üzerinde koşan PostgreSQL (`smartbakery_db`) veritabanına aktarılır.
 6. DBeaver ile SQL analizleri yapılır ve Apache Superset üzerinde interaktif iş zekası dashboard'ları oluşturulur.
 
 ## Kullanılan araçlar
@@ -87,7 +102,7 @@ python import_data.py
 python scripts/import_data.py
 ```
 
-Aktarım tamamlandığında `dim_musteriler`, `dim_urunler`, `dim_tarih` ve `fct_satislar` tabloları birincil anahtarları ve performans indeksleriyle birlikte `smartbakery_db` içinde hazır hale gelir.
+Aktarım tamamlandığında tüm mart tabloları (`dim_musteriler`, `dim_musteri_rfm`, `dim_urunler`, `dim_tarih`, `fct_satislar`, `fct_israf_ve_fire_analizi`, `fct_ideal_uretim_tavsiyesi`) birincil anahtarları ve performans indeksleriyle birlikte `smartbakery_db` içinde hazır hale gelir.
 
 ---
 
@@ -141,7 +156,7 @@ Apache Superset web arayüzüne tarayıcınızdan erişebilirsiniz:
    postgresql+psycopg2://postgres:postgres@postgres:5432/smartbakery_db
    ```
 6. **Test Connection** butonuna basarak bağlantının başarılı olduğunu doğrulayın, ardından **Connect** butonuna tıklayın.
-7. **Datasets** menüsünden `+ DATASET` diyerek `fct_satislar`, `dim_musteriler`, `dim_urunler` veya `dim_tarih` tablolarını ekleyip dashboard ve grafiklerinizi oluşturmaya başlayabilirsiniz.
+7. **Datasets** menüsünden `+ DATASET` diyerek `fct_satislar`, `fct_israf_ve_fire_analizi`, `fct_ideal_uretim_tavsiyesi`, `dim_musteriler`, `dim_musteri_rfm`, `dim_urunler` veya `dim_tarih` tablolarını ekleyip dashboard ve grafiklerinizi oluşturmaya başlayabilirsiniz.
 
 #### Superset Başlatma Adımları (Manuel İhtiyaç Halinde):
 
@@ -166,9 +181,12 @@ Konteyner otomatik olarak başlatma adımlarını çalıştırsa da, manuel olar
 
 ## Testler
 
-`dbt build` sırasında 49 test çalışır: tekillik, boş değer, kabul edilen değerler, tablolar arası ilişki ve değer
-aralığı kontrolleri. Bunlara ek olarak tutar ve kâr hesaplamalarını, staging ile mart tabloları arasındaki satır
-sayısı ve ciro eşitliğini kontrol eden testler vardır.
+`dbt build` sırasında toplam **89 veri kalitesi testi** (tekillik `unique`, boş değer `not_null`, kabul edilen değerler `accepted_values`, referans bütünlüğü `relationships` ve değer aralığı `deger_araliginda`) ve 8 model olmak üzere **97 doğrulama adımı** çalışır:
+- Birincil anahtar tekillik ve boş olmama kontrolleri (`unique`, `not_null`)
+- Boyut ve olgu tabloları arası referans bütünlüğü (`relationships`)
+- Şube kodları, haftanın günleri, ödeme ve saklama tipleri için kabul edilen değer testleri (`accepted_values`)
+- Fire oranı (%0-100), puan (1-5), adet (>=1), tutar (>=0) ve RFM puanları (1-5) için değer aralığı kontrolleri (`deger_araliginda`)
+- Staging ile mart tabloları arasındaki satır sayısı ve ciro eşitliğini doğrulayan mutabakat testleri (`firin_dbt/tests/`)
 
 ## Dokümantasyon
 

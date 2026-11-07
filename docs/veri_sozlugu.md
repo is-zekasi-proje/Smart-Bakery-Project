@@ -11,16 +11,21 @@ Tip sütunu DuckDB'deki tipi gösterir; Parquet dosyalarında `DECIMAL` sütunla
 | Tablo | Şema | Sütun | Açıklama |
 |---|---|---|---|
 | [`fct_satislar`](#fct_satislar) | `marts` | 29 | Satış olgu tablosu. |
+| [`fct_israf_ve_fire_analizi`](#fct_israf_ve_fire_analizi) | `marts` | 19 | SmartBakery 360 gıda israfı ve fire analizi tablosu. |
+| [`fct_ideal_uretim_tavsiyesi`](#fct_ideal_uretim_tavsiyesi) | `marts` | 21 | SmartBakery 360 karar destek sistemi ideal günlük üretim tavsiyesi tablosu. |
 | [`dim_musteriler`](#dim_musteriler) | `marts` | 15 | Müşteri boyutu. |
+| [`dim_musteri_rfm`](#dim_musteri_rfm) | `marts` | 23 | Müşteri Recency (Yenilik), Frequency (Sıklık) ve Monetary (Parasal Değer) analiz tablosu. |
 | [`dim_urunler`](#dim_urunler) | `marts` | 12 | Ürün boyutu. |
 | [`dim_tarih`](#dim_tarih) | `marts` | 14 | Takvim boyutu. |
 | [`stg_firin_satislari`](#stg_firin_satislari) | `staging` | 43 | Temizlenmiş fırın satış verisi. |
 
 ## fct_satislar
 
-**Şema:** `marts`, **Tip:** table, **Kaynak kod:** `firin_dbt/models/marts/fct_satislar.sql`
+**Şema:** `marts`, **Tip:** table, **Kaynak kod:** `firin_dbt/models\marts\fct_satislar.sql`
 
 Satış olgu tablosu. Her satır bir siparişteki bir ürün kalemidir. Ciro, kâr ve indirim analizlerinin ana tablosudur. dim_musteriler (musteri_id), dim_urunler (urun_adi) ve dim_tarih (siparis_tarihi) ile bağlanır.
+
+**Birincil anahtar:** `siparis_kalem_id`
 
 | Sütun | Tip | Açıklama | Testler |
 |---|---|---|---|
@@ -54,11 +59,75 @@ Satış olgu tablosu. Her satır bir siparişteki bir ürün kalemidir. Ciro, k�
 | `mevcut_stok` | INTEGER | Kalan stok adedi. |  |
 | `fire_orani` | DECIMAL(5,1) | Fire yüzdesi (satilmayan_adet / uretilen_adet * 100). Toplanmamalı, ortalaması alınmalıdır. | aralık [0, 100] |
 
+## fct_israf_ve_fire_analizi
+
+**Şema:** `marts`, **Tip:** table, **Kaynak kod:** `firin_dbt/models\marts\fct_israf_ve_fire_analizi.sql`
+
+SmartBakery 360 gıda israfı ve fire analizi tablosu. Mağaza, ürün ve tarih bazında satılmayan adet, fire yüzdesi ve parasal fire maliyeti metriklerini hesaplar.
+
+**Birincil anahtar:** `israf_kayit_id`
+
+| Sütun | Tip | Açıklama | Testler |
+|---|---|---|---|
+| `israf_kayit_id` | VARCHAR | Tekil anahtar (magaza_id + urun_adi + siparis_tarihi md5 özeti). | not_null, unique |
+| `magaza_id` | VARCHAR | Mağaza kodu (ST01, ST02, ST03). | accepted_values, not_null |
+| `urun_adi` | VARCHAR | Ürün adı. | not_null, relationships: dim_urunler.urun_adi |
+| `siparis_tarihi` | DATE | Satış ve israf tarihi. | not_null, relationships: dim_tarih.tarih |
+| `kategori` | VARCHAR | Ürün kategorisi. |  |
+| `saklama_tipi` | VARCHAR | Saklama koşulu (Dry Storage, Refrigerated, Room Temperature). |  |
+| `bozulabilirlik` | VARCHAR | Bozulma hızı seviyesi (Low, Medium, High, Very High). |  |
+| `raf_omru_gun` | INTEGER | Ürünün raf ömrü (gün). |  |
+| `mevsim` | VARCHAR | Mevsim bilgisi. |  |
+| `hava_durumu` | VARCHAR | Günlük hava durumu. |  |
+| `uretilen_adet` | INTEGER | Günlük üretilen toplam ürün adedi. |  |
+| `satilan_adet` | INTEGER | Günlük satılan ürün adedi. |  |
+| `mevcut_stok` | INTEGER | Gün sonu kalan mevcut stok adedi. |  |
+| `satilmayan_adet` | INTEGER | Gün sonunda satılamayan ve israf olan ürün adedi. | >= 0, not_null |
+| `fire_orani` | DECIMAL(5,1) | Fire oranı yüzdesi (%0-100). | aralık [0, 100], not_null |
+| `birim_maliyet` | DECIMAL(10,2) | Ürünün birim maliyeti. |  |
+| `birim_fiyat` | DECIMAL(10,2) | Ürünün liste satış fiyatı. |  |
+| `fire_maliyeti` | DECIMAL(12,2) | Parasal fire maliyeti (satılmayan_adet * birim_maliyet). | >= 0, not_null |
+| `potansiyel_ciro_kaybi` | DECIMAL(12,2) | İsraf olan ürünlerin satılsaydı getireceği tahmini ciro kaybı (satılmayan_adet * birim_fiyat). |  |
+
+## fct_ideal_uretim_tavsiyesi
+
+**Şema:** `marts`, **Tip:** table, **Kaynak kod:** `firin_dbt/models\marts\fct_ideal_uretim_tavsiyesi.sql`
+
+SmartBakery 360 karar destek sistemi ideal günlük üretim tavsiyesi tablosu. Mağaza, ürün ve haftanın günü bazında geçmiş satış ortalamasını ve bozulabilirlik güvenlik payını kullanarak fırın ustasına tavsiye edilen ideal üretim miktarını belirler.
+
+**Birincil anahtar:** `tavsiye_id`
+
+| Sütun | Tip | Açıklama | Testler |
+|---|---|---|---|
+| `tavsiye_id` | VARCHAR | Tekil anahtar (magaza_id + urun_adi + haftanin_gunu md5 özeti). | not_null, unique |
+| `magaza_id` | VARCHAR | Mağaza kodu (ST01, ST02, ST03). | accepted_values, not_null |
+| `urun_adi` | VARCHAR | Ürün adı. | not_null, relationships: dim_urunler.urun_adi |
+| `kategori` | VARCHAR | Ürün kategorisi. |  |
+| `bozulabilirlik` | VARCHAR | Bozulma hızı seviyesi (Low, Medium, High, Very High). |  |
+| `raf_omru_gun` | DECIMAL(6,1) | Ortalama raf ömrü (gün). |  |
+| `saklama_tipi` | VARCHAR | Saklama koşulu. |  |
+| `haftanin_gunu` | VARCHAR | Haftanın günü. | accepted_values, not_null |
+| `haftanin_gunu_no` | INTEGER | Haftanın günü sıralama numarası (1 = Pazartesi, 7 = Pazar). |  |
+| `hafta_sonu_mu` | BOOLEAN | Hafta sonu mu (Cumartesi veya Pazar). |  |
+| `gozlem_sayisi` | BIGINT | Geçmiş veri setinde bu gün için yapılan toplam gün gözlemi sayısı. |  |
+| `ortalama_gunluk_satis` | DECIMAL(10,2) | Geçmiş ortalama günlük satış adedi. |  |
+| `min_gunluk_satis` | INTEGER | Geçmişte bu günde görülen en düşük satış adedi. |  |
+| `max_gunluk_satis` | INTEGER | Geçmişte bu günde görülen en yüksek satış adedi. |  |
+| `ortalama_gecmis_fire_orani` | DECIMAL(5,1) | Geçmiş ortalama fire yüzdesi. |  |
+| `guvenlik_stogu_orani` | DECIMAL(3,2) | Bozulabilirliğe göre dinamik güvenlik stoku tampon oranı (High=%5, Medium=%10, Low=%15). |  |
+| `tavsiye_edilen_uretim_adedi` | INTEGER | Fırın ustasına tavsiye edilen ideal günlük üretim adedi. | >= 1, not_null |
+| `ortalama_birim_maliyet` | DECIMAL(10,2) | Ortalama birim maliyet. |  |
+| `ortalama_birim_fiyat` | DECIMAL(10,2) | Ortalama liste satış fiyatı. |  |
+| `tahmini_uretim_maliyeti` | DECIMAL(12,2) | Tavsiye edilen üretimin toplam tahmini maliyeti (tavsiye_edilen_uretim_adedi * ortalama_birim_maliyet). |  |
+| `tahmini_potansiyel_ciro` | DECIMAL(12,2) | Tavsiye edilen üretimin satılması halinde sağlayacağı tahmini ciro (tavsiye_edilen_uretim_adedi * ortalama_birim_fiyat). |  |
+
 ## dim_musteriler
 
-**Şema:** `marts`, **Tip:** table, **Kaynak kod:** `firin_dbt/models/marts/dim_musteriler.sql`
+**Şema:** `marts`, **Tip:** table, **Kaynak kod:** `firin_dbt/models\marts\dim_musteriler.sql`
 
 Müşteri boyutu. Her satır bir müşteridir; demografik bilgiler ve satın alma davranışı özeti (sipariş sayısı, harcama, yenilik) içerir. Müşteri segmentasyonu veya churn modeli için temel tablodur.
+
+**Birincil anahtar:** `musteri_id`
 
 | Sütun | Tip | Açıklama | Testler |
 |---|---|---|---|
@@ -78,11 +147,47 @@ Müşteri boyutu. Her satır bir müşteridir; demografik bilgiler ve satın alm
 | `ortalama_sepet_tutari` | DECIMAL(10,2) | Sipariş başına ortalama harcama. |  |
 | `ortalama_puan` | DECIMAL(3,2) | Müşterinin siparişlerine verdiği ortalama puan (sipariş bazında). |  |
 
+## dim_musteri_rfm
+
+**Şema:** `marts`, **Tip:** table, **Kaynak kod:** `firin_dbt/models\marts\dim_musteri_rfm.sql`
+
+Müşteri Recency (Yenilik), Frequency (Sıklık) ve Monetary (Parasal Değer) analiz tablosu. 500 müşterinin her birine 1-5 arası ntile puanları ve müşteri segmentasyonu atar.
+
+**Birincil anahtar:** `musteri_id`
+
+| Sütun | Tip | Açıklama | Testler |
+|---|---|---|---|
+| `musteri_id` | VARCHAR | Müşteri numarası (tekil). | not_null, relationships: dim_musteriler.musteri_id, unique |
+| `musteri_yasi` | INTEGER | Müşterinin yaşı. |  |
+| `yas_grubu` | VARCHAR | Yaş grubu (16-24, 25-34, 35-44, 45-54, 55+). |  |
+| `musteri_cinsiyeti` | VARCHAR | Müşterinin cinsiyeti (Female, Male, Other). |  |
+| `musteri_segmenti` | VARCHAR | Müşteri segmenti (Family, Senior Citizen, Student, Young Professional). |  |
+| `sadakat_uyesi_mi` | BOOLEAN | Sadakat programı üyesi mi. |  |
+| `ilk_siparis_tarihi` | DATE | Müşterinin ilk sipariş tarihi. |  |
+| `son_siparis_tarihi` | DATE | Müşterinin son sipariş tarihi. |  |
+| `son_siparisten_gecen_gun` | BIGINT | Son siparişten bugüne (veya veri sonuna) kadar geçen gün sayısı (yenilik / recency). | >= 0, not_null |
+| `siparis_sayisi` | BIGINT | Toplam sipariş sayısı (sıklık / frequency). | >= 1, not_null |
+| `toplam_harcama` | DECIMAL(14,2) | Müşterinin toplam harcama tutarı (parasal değer / monetary). | >= 0, not_null |
+| `toplam_kar` | DECIMAL(14,2) | Müşteriden elde edilen toplam net kâr. |  |
+| `toplam_urun_adedi` | INTEGER | Müşterinin satın aldığı toplam ürün adedi. |  |
+| `ortalama_sepet_tutari` | DECIMAL(10,2) | Sipariş başına ortalama harcama. |  |
+| `ortalama_puan` | DECIMAL(3,2) | Müşterinin siparişlerine verdiği ortalama puan. |  |
+| `favori_odeme_yontemi` | VARCHAR | En çok tercih ettiği ödeme yöntemi. |  |
+| `en_sik_gidilen_magaza` | VARCHAR | En sık alışveriş yaptığı mağaza kodu. |  |
+| `r_skoru` | BIGINT | Recency skoru (1-5; 5 en yeni). | aralık [1, 5], not_null |
+| `f_skoru` | BIGINT | Frequency skoru (1-5; 5 en sık). | aralık [1, 5], not_null |
+| `m_skoru` | BIGINT | Monetary skoru (1-5; 5 en çok harcayan). | aralık [1, 5], not_null |
+| `rfm_skoru` | VARCHAR | Üç haneli birleşik RFM skor metni (örn. '555', '321'). |  |
+| `rfm_ortalama_skor` | DECIMAL(3,2) | R, F ve M skorlarının aritmetik ortalaması. |  |
+| `rfm_segmenti` | VARCHAR | Müşteri RFM segment grubu. | not_null |
+
 ## dim_urunler
 
-**Şema:** `marts`, **Tip:** table, **Kaynak kod:** `firin_dbt/models/marts/dim_urunler.sql`
+**Şema:** `marts`, **Tip:** table, **Kaynak kod:** `firin_dbt/models\marts\dim_urunler.sql`
 
 Ürün boyutu. Her satır bir üründür; kategori ve saklama bilgileri ile satış, kâr ve fire özetini içerir.
+
+**Birincil anahtar:** `urun_adi`
 
 | Sütun | Tip | Açıklama | Testler |
 |---|---|---|---|
@@ -101,9 +206,11 @@ Müşteri boyutu. Her satır bir müşteridir; demografik bilgiler ve satın alm
 
 ## dim_tarih
 
-**Şema:** `marts`, **Tip:** table, **Kaynak kod:** `firin_dbt/models/marts/dim_tarih.sql`
+**Şema:** `marts`, **Tip:** table, **Kaynak kod:** `firin_dbt/models\marts\dim_tarih.sql`
 
 Takvim boyutu. Veri aralığındaki (2023-01-01 ile 2024-12-31 arası) her gün için bir satır; mevsim, festival ve hava bilgisi gün düzeyinde burada tutulur.
+
+**Birincil anahtar:** `tarih`
 
 | Sütun | Tip | Açıklama | Testler |
 |---|---|---|---|
@@ -124,9 +231,11 @@ Takvim boyutu. Veri aralığındaki (2023-01-01 ile 2024-12-31 arası) her gün 
 
 ## stg_firin_satislari
 
-**Şema:** `staging`, **Tip:** view, **Kaynak kod:** `firin_dbt/models/staging/stg_firin_satislari.sql`
+**Şema:** `staging`, **Tip:** view, **Kaynak kod:** `firin_dbt/models\staging\stg_firin_satislari.sql`
 
 Temizlenmiş fırın satış verisi. Her satır bir siparişteki bir ürün kalemidir (siparis_id + urun_adi tekildir). Sütunlar Türkçe adlandırılmış, para ve yüzde sütunları DECIMAL'e çevrilmiş, boş festival/promosyon değerleri doldurulmuştur. Kategori değerleri kaynaktaki gibi İngilizcedir.
+
+**Birincil anahtar:** `siparis_kalem_id`
 
 | Sütun | Tip | Açıklama | Testler |
 |---|---|---|---|
