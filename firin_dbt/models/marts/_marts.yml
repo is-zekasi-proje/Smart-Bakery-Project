@@ -400,7 +400,7 @@ models:
       - name: ortalama_gecmis_fire_orani
         description: Geçmiş ortalama fire yüzdesi.
       - name: guvenlik_stogu_orani
-        description: Bozulabilirliğe göre dinamik güvenlik stoku tampon oranı (High=%5, Medium=%10, Low=%15).
+        description: Bozulabilirliğe göre dinamik güvenlik stoku tampon oranı (High=%5, Medium=%10, Low=%15, Very High=%15; Very High iş kuralı kararı bekliyor).
       - name: tavsiye_edilen_uretim_adedi
         description: Fırın ustasına tavsiye edilen ideal günlük üretim adedi.
         data_tests:
@@ -421,7 +421,9 @@ models:
   - name: dim_musteri_rfm
     description: >
       Müşteri Recency (Yenilik), Frequency (Sıklık) ve Monetary (Parasal Değer) analiz
-      tablosu. 500 müşterinin her birine 1-5 arası ntile puanları ve müşteri segmentasyonu atar.
+      tablosu. 500 müşterinin her birine 1-5 arası ntile puanları ve dokuz müşteri segmentinden
+      birini atar. Eşit R/F/M değerleri musteri_id artan sırada; en sık mağaza ve favori ödeme
+      yöntemi eşitlikleri alfabetik ilk değerle çözülür.
     columns:
       - name: musteri_id
         description: Müşteri numarası (tekil).
@@ -508,6 +510,21 @@ models:
       - name: rfm_ortalama_skor
         description: R, F ve M skorlarının aritmetik ortalaması.
       - name: rfm_segmenti
-        description: Müşteri RFM segment grubu.
+        description: >
+          RFM segmenti: Şampiyonlar, Sadık Müşteriler, Yeni Müşteriler, Potansiyel Sadıklar,
+          Gelişime Açık, Kaybedilme Riski Yüksek, Dikkat Gerektirenler, Uykudaki Değerliler,
+          Kayıp Müşteriler.
         data_tests:
           - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - 'Şampiyonlar'
+                  - 'Sadık Müşteriler'
+                  - 'Yeni Müşteriler'
+                  - 'Potansiyel Sadıklar'
+                  - 'Gelişime Açık'
+                  - 'Kaybedilme Riski Yüksek'
+                  - 'Dikkat Gerektirenler'
+                  - 'Uykudaki Değerliler'
+                  - 'Kayıp Müşteriler'

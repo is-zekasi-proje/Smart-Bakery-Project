@@ -13,3 +13,7 @@ data_tests:
     description: >
       Mutabakat: dim_musteriler'deki toplam harcama ve sipariş sayısı fct_satislar ile
       aynı olmalıdır (müşteri özetinde join kaynaklı çoğalma yok).
+  - name: assert_rfm_tum_segmentler_dolu
+    description: Dokuz RFM segmentinin her birinde en az bir müşteri bulunmalıdır.
+  - name: assert_ideal_uretim_is_kurallari
+    description: Güvenlik stoku oranı bozulabilirlik seviyesine ve önerilen üretim miktarı formüle uymalıdır.

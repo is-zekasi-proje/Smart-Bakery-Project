@@ -4,14 +4,45 @@
 -- toplam harcama (Monetary) metriklerini derler, 1-5 arası ntile skorları ve
 -- müşteri segmentasyonu atar.
 
-with satislar as (
+with magaza_siralama as (
 
     select
         musteri_id,
-        mode(odeme_yontemi) as favori_odeme_yontemi,
-        mode(magaza_id)     as en_sik_gidilen_magaza
+        magaza_id,
+        row_number() over (
+            partition by musteri_id
+            order by count(*) desc, magaza_id asc
+        ) as magaza_sirasi
     from {{ ref('fct_satislar') }}
-    group by musteri_id
+    group by musteri_id, magaza_id
+
+),
+
+odeme_siralama as (
+
+    select
+        musteri_id,
+        odeme_yontemi,
+        row_number() over (
+            partition by musteri_id
+            order by count(*) desc, odeme_yontemi asc
+        ) as odeme_sirasi
+    from {{ ref('fct_satislar') }}
+    group by musteri_id, odeme_yontemi
+
+),
+
+satislar as (
+
+    select
+        o.musteri_id,
+        o.odeme_yontemi as favori_odeme_yontemi,
+        m.magaza_id as en_sik_gidilen_magaza
+    from odeme_siralama as o
+    inner join magaza_siralama as m
+        on o.musteri_id = m.musteri_id
+    where o.odeme_sirasi = 1
+      and m.magaza_sirasi = 1
 
 ),
 
@@ -68,11 +99,11 @@ skorlama as (
     select
         *,
         -- R Skoru: Son alışverişi en yakın olan (en küçük gün) en yüksek puanı alır (5)
-        ntile(5) over (order by son_siparisten_gecen_gun desc) as r_skoru,
+        ntile(5) over (order by son_siparisten_gecen_gun desc, musteri_id asc) as r_skoru,
         -- F Skoru: Sipariş adedi en çok olan en yüksek puanı alır (5)
-        ntile(5) over (order by siparis_sayisi asc)             as f_skoru,
+        ntile(5) over (order by siparis_sayisi asc, musteri_id asc) as f_skoru,
         -- M Skoru: Harcaması en yüksek olan en yüksek puanı alır (5)
-        ntile(5) over (order by toplam_harcama asc)            as m_skoru
+        ntile(5) over (order by toplam_harcama asc, musteri_id asc) as m_skoru
     from rfm_birlestirme
 
 ),
@@ -105,8 +136,8 @@ segmentasyon as (
         case
             when r_skoru >= 4 and f_skoru >= 4 and m_skoru >= 4 then 'Şampiyonlar'
             when r_skoru >= 3 and f_skoru >= 3 then 'Sadık Müşteriler'
-            when r_skoru >= 4 and f_skoru <= 2 then 'Potansiyel Sadıklar'
             when r_skoru >= 4 and f_skoru = 1 then 'Yeni Müşteriler'
+            when r_skoru >= 4 and f_skoru <= 2 then 'Potansiyel Sadıklar'
             when r_skoru = 3 and f_skoru <= 2 then 'Gelişime Açık'
             when r_skoru <= 2 and f_skoru >= 4 then 'Kaybedilme Riski Yüksek'
             when r_skoru <= 2 and f_skoru = 3 then 'Dikkat Gerektirenler'

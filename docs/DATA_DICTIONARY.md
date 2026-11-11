@@ -114,7 +114,7 @@ SmartBakery 360 karar destek sistemi ideal günlük üretim tavsiyesi tablosu. M
 | `min_gunluk_satis` | INTEGER | Geçmişte bu günde görülen en düşük satış adedi. |  |
 | `max_gunluk_satis` | INTEGER | Geçmişte bu günde görülen en yüksek satış adedi. |  |
 | `ortalama_gecmis_fire_orani` | DECIMAL(5,1) | Geçmiş ortalama fire yüzdesi. |  |
-| `guvenlik_stogu_orani` | DECIMAL(3,2) | Bozulabilirliğe göre dinamik güvenlik stoku tampon oranı (High=%5, Medium=%10, Low=%15). |  |
+| `guvenlik_stogu_orani` | DECIMAL(3,2) | Bozulabilirliğe göre dinamik güvenlik stoku tampon oranı (High=%5, Medium=%10, Low=%15, Very High=%15; Very High iş kuralı kararı bekliyor). |  |
 | `tavsiye_edilen_uretim_adedi` | INTEGER | Fırın ustasına tavsiye edilen ideal günlük üretim adedi. | >= 1, not_null |
 | `ortalama_birim_maliyet` | DECIMAL(10,2) | Ortalama birim maliyet. |  |
 | `ortalama_birim_fiyat` | DECIMAL(10,2) | Ortalama liste satış fiyatı. |  |
@@ -151,7 +151,7 @@ Müşteri boyutu. Her satır bir müşteridir; demografik bilgiler ve satın alm
 
 **Şema:** `marts`, **Tip:** table, **Kaynak kod:** `firin_dbt/models\marts\dim_musteri_rfm.sql`
 
-Müşteri Recency (Yenilik), Frequency (Sıklık) ve Monetary (Parasal Değer) analiz tablosu. 500 müşterinin her birine 1-5 arası ntile puanları ve müşteri segmentasyonu atar.
+Müşteri Recency (Yenilik), Frequency (Sıklık) ve Monetary (Parasal Değer) analiz tablosu. 500 müşterinin her birine 1-5 arası ntile puanları ve dokuz müşteri segmentinden birini atar. Eşit R/F/M değerleri `musteri_id` artan sırayla çözülür; en sık mağaza ve favori ödeme yöntemi eşitliğinde alfabetik ilk değer seçilir.
 
 **Birincil anahtar:** `musteri_id`
 
@@ -179,7 +179,7 @@ Müşteri Recency (Yenilik), Frequency (Sıklık) ve Monetary (Parasal Değer) a
 | `m_skoru` | BIGINT | Monetary skoru (1-5; 5 en çok harcayan). | aralık [1, 5], not_null |
 | `rfm_skoru` | VARCHAR | Üç haneli birleşik RFM skor metni (örn. '555', '321'). |  |
 | `rfm_ortalama_skor` | DECIMAL(3,2) | R, F ve M skorlarının aritmetik ortalaması. |  |
-| `rfm_segmenti` | VARCHAR | Müşteri RFM segment grubu. | not_null |
+| `rfm_segmenti` | VARCHAR | Müşteri RFM segmenti (Şampiyonlar, Sadık Müşteriler, Yeni Müşteriler, Potansiyel Sadıklar, Gelişime Açık, Kaybedilme Riski Yüksek, Dikkat Gerektirenler, Uykudaki Değerliler, Kayıp Müşteriler). | not_null |
 
 ## dim_urunler
 
