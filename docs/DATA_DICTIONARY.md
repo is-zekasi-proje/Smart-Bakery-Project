@@ -114,7 +114,7 @@ SmartBakery 360 karar destek sistemi ideal günlük üretim tavsiyesi tablosu. M
 | `min_gunluk_satis` | INTEGER | Geçmişte bu günde görülen en düşük satış adedi. |  |
 | `max_gunluk_satis` | INTEGER | Geçmişte bu günde görülen en yüksek satış adedi. |  |
 | `ortalama_gecmis_fire_orani` | DECIMAL(5,1) | Geçmiş ortalama fire yüzdesi. |  |
-| `guvenlik_stogu_orani` | DECIMAL(3,2) | Bozulabilirliğe göre dinamik güvenlik stoku tampon oranı (High=%5, Medium=%10, Low=%15, Very High=%15; Very High iş kuralı kararı bekliyor). |  |
+| `guvenlik_stogu_orani` | DECIMAL(3,2) | Dengeli başlangıç tamponu (Very High=%5, High=%7, Medium=%10, Low=%12). Fire/raf ömrü verisiyle ayarlanmıştır; stock-out gözlemi bulunmadığından saha verisiyle doğrulanmalıdır. |  |
 | `tavsiye_edilen_uretim_adedi` | INTEGER | Fırın ustasına tavsiye edilen ideal günlük üretim adedi. | >= 1, not_null |
 | `ortalama_birim_maliyet` | DECIMAL(10,2) | Ortalama birim maliyet. |  |
 | `ortalama_birim_fiyat` | DECIMAL(10,2) | Ortalama liste satış fiyatı. |  |

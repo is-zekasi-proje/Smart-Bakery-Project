@@ -400,7 +400,10 @@ models:
       - name: ortalama_gecmis_fire_orani
         description: Geçmiş ortalama fire yüzdesi.
       - name: guvenlik_stogu_orani
-        description: Bozulabilirliğe göre dinamik güvenlik stoku tampon oranı (High=%5, Medium=%10, Low=%15, Very High=%15; Very High iş kuralı kararı bekliyor).
+        description: >
+          Dengeli başlangıç tamponu (Very High=%5, High=%7, Medium=%10, Low=%12).
+          Fire/raf ömrü verisiyle ayarlanmıştır; stock-out gözlemi olmadığından saha
+          verisiyle doğrulanmalıdır.
       - name: tavsiye_edilen_uretim_adedi
         description: Fırın ustasına tavsiye edilen ideal günlük üretim adedi.
         data_tests:

@@ -64,23 +64,24 @@ gecmis_istatistikler as (
         cast(coalesce(round(sum(g.birim_maliyet) / count(g.birim_maliyet), 2), u.ortalama_birim_maliyet) as decimal(10, 2)) as ortalama_birim_maliyet,
         cast(coalesce(round(sum(g.birim_fiyat) / count(g.birim_fiyat), 2), u.ortalama_birim_fiyat) as decimal(10, 2))     as ortalama_birim_fiyat,
 
-        -- Bozulabilirlik seviyesine göre güvenlik payı:
-        -- High (raf ömrü kısa, pasta vb.) -> %5 tampon (israfı önleme öncelikli)
-        -- Medium (ekmek, poğaça vb.)     -> %10 tampon
-        -- Low (bisküvi, çay vb.)          -> %15 tampon (stoksuz kalmama öncelikli)
+        -- Dengeli başlangıç politikası: kısa raf ömrü ve yüksek fire daha düşük,
+        -- uzun raf ömrü stok bulunurluğu için daha yüksek tamponla dengelenir.
+        -- Gözlenen stock-out olmadığından oranlar saha verisiyle izlenmelidir.
         case
-            when u.bozulabilirlik = 'High' then 0.05
+            when u.bozulabilirlik = 'High' then 0.07
             when u.bozulabilirlik = 'Medium' then 0.10
-            when u.bozulabilirlik = 'Very High' then 0.15 -- İş kuralı kararı bekliyor.
-            else 0.15
+            when u.bozulabilirlik = 'Low' then 0.12
+            when u.bozulabilirlik = 'Very High' then 0.05
+            else 0.12
         end as guvenlik_stogu_orani,
 
         -- Fırın ustasına tavsiye edilen ideal üretim miktarı
         case
-            when u.bozulabilirlik = 'High' then cast(ceil(avg(g.gunluk_satilan_adet) * 1.05) as integer)
+            when u.bozulabilirlik = 'High' then cast(ceil(avg(g.gunluk_satilan_adet) * 1.07) as integer)
             when u.bozulabilirlik = 'Medium' then cast(ceil(avg(g.gunluk_satilan_adet) * 1.10) as integer)
-            when u.bozulabilirlik = 'Very High' then cast(ceil(avg(g.gunluk_satilan_adet) * 1.15) as integer) -- İş kuralı kararı bekliyor.
-            else cast(ceil(avg(g.gunluk_satilan_adet) * 1.15) as integer)
+            when u.bozulabilirlik = 'Low' then cast(ceil(avg(g.gunluk_satilan_adet) * 1.12) as integer)
+            when u.bozulabilirlik = 'Very High' then cast(ceil(avg(g.gunluk_satilan_adet) * 1.05) as integer)
+            else cast(ceil(avg(g.gunluk_satilan_adet) * 1.12) as integer)
         end as tavsiye_edilen_uretim_adedi
 
     from gunluk_satislar as g
