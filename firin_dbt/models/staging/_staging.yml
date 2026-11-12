@@ -67,7 +67,7 @@ models:
       - name: hafta_sonu_mu
         description: Sipariş hafta sonu mu verildi (Cumartesi/Pazar).
       - name: saat
-        description: Siparişin saat dilimi (7-21).
+        description: Siparişin verildiği günün saati (7-21).
       - name: mevsim
         description: Mevsim (Winter, Summer, Monsoon, Autumn).
       - name: festival

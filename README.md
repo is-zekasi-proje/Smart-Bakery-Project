@@ -219,6 +219,9 @@ Konteyner otomatik olarak başlatma adımlarını çalıştırsa da, manuel olar
 ## Testler
 
 dbt doğrulamaları, model YAML dosyalarındaki test tanımları ve `firin_dbt/tests/` altındaki özel SQL testlerinden oluşur. Testleri çalıştırmak için `firin_dbt/` içinde `dbt build` kullanılır.
+
+Proje **92 veri testi** ve **8 dbt modelinden** oluşur; `dbt build` toplam **100 model ve test adımı** yürütür. Beş özel SQL testi: iki mutabakat (`assert_fct_staging_mutabakati`, `assert_musteri_harcamasi_mutabakati`), bir tutar/kâr iş kuralı (`assert_tutar_ve_kar_tutarli`), RFM segment kontrolü (`assert_rfm_tum_segmentler_dolu`) ve üretim önerisi iş kuralı (`assert_ideal_uretim_is_kurallari`).
+
 - Birincil anahtar tekillik ve boş olmama kontrolleri (`unique`, `not_null`)
 - Boyut ve olgu tabloları arası referans bütünlüğü (`relationships`)
 - Şube kodları, haftanın günleri, ödeme ve saklama tipleri için kabul edilen değerler (`accepted_values`)

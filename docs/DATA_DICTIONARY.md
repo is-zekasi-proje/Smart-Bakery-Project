@@ -255,7 +255,7 @@ Temizlenmiş fırın satış verisi. Her satır bir siparişteki bir ürün kale
 | `gun` | INTEGER | Ayın günü (1-31). |  |
 | `haftanin_gunu` | VARCHAR | Haftanın günü (Monday-Sunday). |  |
 | `hafta_sonu_mu` | BOOLEAN | Sipariş hafta sonu mu verildi (Cumartesi/Pazar). |  |
-| `saat` | INTEGER | Siparişin saat dilimi (7-21). |  |
+| `saat` | INTEGER | Siparişin verildiği günün saati (7-21). |  |
 | `mevsim` | VARCHAR | Mevsim (Winter, Summer, Monsoon, Autumn). |  |
 | `festival` | VARCHAR | O günkü festival; festival olmayan günlerde 'No Festival'. | not_null |
 | `hava_durumu` | VARCHAR | O günkü hava durumu. |  |

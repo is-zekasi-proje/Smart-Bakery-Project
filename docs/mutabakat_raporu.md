@@ -1,6 +1,6 @@
 # Mutabakat Raporu
 
-Bu rapor, `data/bakery.duckdb` üzerinde 10 Kasım 2026'da çalıştırılan sorguların ve `dbt test` çıktısının sonuçlarını içerir. Rakamların hepsi bu çıktılardan alınmıştır.
+Bu rapor, `data/bakery.duckdb` üzerinde 13 Kasım 2026'da salt okunur çalıştırılan sorguların ve `dbt test` çıktısının sonuçlarını içerir. Rakamların hepsi bu çıktılardan alınmıştır.
 
 ## 1. Veri akışı boyunca satır ve ciro mutabakatı
 
@@ -20,7 +20,24 @@ Sonuç: ham, staging ve mart katmanlarında satır sayısı aynıdır (19.321). 
 | Sipariş sayısı (toplam / tekil `siparis_id`) | 6.576 | 6.576 | Evet |
 | Müşteri sayısı | 500 | 500 (tekil `musteri_id`) | Evet |
 
-## 3. Kalem düzeyi iş kuralı
+## 3. RFM segment dağılımı
+
+`dim_musteri_rfm` tablosunda dokuz segmentin tamamı bulunur; dağılımın toplamı 500 müşteridir.
+
+| RFM segmenti | Müşteri sayısı |
+|---|---:|
+| Şampiyonlar | 68 |
+| Sadık Müşteriler | 131 |
+| Potansiyel Sadıklar | 41 |
+| Yeni Müşteriler | 24 |
+| Gelişime Açık | 36 |
+| Kaybedilme Riski Yüksek | 60 |
+| Dikkat Gerektirenler | 41 |
+| Uykudaki Değerliler | 23 |
+| Kayıp Müşteriler | 76 |
+| **Toplam** | **500** |
+
+## 4. Kalem düzeyi iş kuralı
 
 Kural: her kalemde `toplam_tutar = satis_fiyati × adet` ve `kar = toplam_tutar − toplam_maliyet` olmalıdır (tolerans 0,01).
 
@@ -28,7 +45,7 @@ Kural: her kalemde `toplam_tutar = satis_fiyati × adet` ve `kar = toplam_tutar 
 - En büyük sapma (tutar): 0,00
 - En büyük sapma (kâr): 0,00
 
-## 4. Kâr ve fire kontrol sayıları
+## 5. Kâr ve fire kontrol sayıları
 
 **Toplam kâr.** Dört tabloda da aynı değer çıkmıştır; paylaşılan beklenen kontrol değeri (1.143.737,55) ile eşleşmektedir.
 
@@ -38,6 +55,8 @@ Kural: her kalemde `toplam_tutar = satis_fiyati × adet` ve `kar = toplam_tutar 
 | `marts.dim_musteriler` | `toplam_kar` | 1.143.737,55 |
 | `marts.dim_musteri_rfm` | `toplam_kar` | 1.143.737,55 |
 | `marts.dim_urunler` | `toplam_kar` | 1.143.737,55 |
+
+**Toplam fire maliyeti.** `marts.fct_israf_ve_fire_analizi` tablosunda `SUM(fire_maliyeti)` sonucu **894.347,63**'tür; DuckDB ve PostgreSQL kopyaları eşleşmektedir.
 
 **Ortalama fire oranı.** Tanıma ve tabloya göre farklı değerler çıkmaktadır. Paylaşılan beklenen değer (%34,1) ilk iki satırla eşleşmektedir.
 
@@ -52,7 +71,7 @@ Kural: her kalemde `toplam_tutar = satis_fiyati × adet` ve `kar = toplam_tutar 
 
 Not: "ortalama fire" metriği dashboard'da kullanılırken hangi tablo ve hesabın esas alındığı açıkça belirtilmelidir; farklı tanımlar farklı değer verir.
 
-## 5. Veri kapsamı (`fct_satislar`)
+## 6. Veri kapsamı (`fct_satislar`)
 
 | Ölçüt | Değer |
 |---|---|
@@ -62,7 +81,7 @@ Not: "ortalama fire" metriği dashboard'da kullanılırken hangi tablo ve hesab�
 | Mağaza | 3 |
 | Tarih aralığı | 2023-01-01 – 2024-12-31 |
 
-## 6. Mart tablolarının satır sayıları
+## 7. Mart tablolarının satır sayıları
 
 | Tablo | Satır sayısı |
 |---|---|
@@ -76,14 +95,16 @@ Not: "ortalama fire" metriği dashboard'da kullanılırken hangi tablo ve hesab�
 
 Bu sayılar README'deki değerlerle birebir aynıdır.
 
-## 7. dbt testleri
+## 8. dbt testleri
 
-`dbt test` (10 Kasım 2026): **PASS=89, WARN=0, ERROR=0, SKIP=0, TOTAL=89**.
+`dbt test` (13 Kasım 2026): **PASS=92, WARN=0, ERROR=0, SKIP=0, TOTAL=92**.
 
-Bu testlerin üçü `firin_dbt/tests/` altındaki özel testlerdir:
+Bu testlerin beşi `firin_dbt/tests/` altındaki özel testlerdir:
 
 | Test | Kontrol |
 |---|---|
 | `assert_fct_staging_mutabakati` | Staging ile `fct_satislar` aynı satır sayısına ve ciroya sahip |
 | `assert_musteri_harcamasi_mutabakati` | `dim_musteriler` toplam harcama ve sipariş sayısı `fct_satislar` ile aynı |
 | `assert_tutar_ve_kar_tutarli` | Her kalemde tutar ve kâr hesabı tutarlı (iş kuralı) |
+| `assert_rfm_tum_segmentler_dolu` | Dokuz RFM segmentinin her birinde en az bir müşteri var |
+| `assert_ideal_uretim_is_kurallari` | Güvenlik stoku oranları ve önerilen üretim miktarı formülü tutarlı |
