@@ -26,7 +26,7 @@ Proje, dbt ile modellenen **toplam 8 modelden** (1 staging, 7 mart) oluşur:
    - `fct_israf_ve_fire_analizi`: Mağaza × ürün × gün düzeyinde israf/fire olgusu (16.563 satır).
      - **dbt SQL çıktı kolonları:** `israf_kayit_id`, `magaza_id`, `urun_adi`, `siparis_tarihi`, `kategori`, `saklama_tipi`, `bozulabilirlik`, `raf_omru_gun`, `mevsim`, `hava_durumu`, `uretilen_adet`, `satilan_adet`, `mevcut_stok`, `satilmayan_adet`, `fire_orani`, `birim_maliyet`, `birim_fiyat`, `fire_maliyeti`, `potansiyel_ciro_kaybi`.
      - `fire_maliyeti`, satılmayan adet ile ortalama birim maliyetin; `potansiyel_ciro_kaybi`, satılmayan adet ile ortalama birim fiyatın çarpımıdır (gruplama düzeyinde).
-     - **Beslediği Superset grafikleri (`viz_type`):** `Ortalama İsraf Oranı` (`big_number_total`), `Toplam Fire Maliyetı` (`big_number_total`), `Satılamayan Ürün Adedi` (`big_number_total`), `En Çok İsraf Edilen Top 10 Ürün` (`echarts_timeseries_bar`), `Kategori Bazlı İsraf Maliyeti Dağılımı` (`pie`), `Haftanın Günlerine Göre İsraf Risk Haritası (%)` (`heatmap_v2`), `Günlük Fire Maliyeti ve İsraf Trendi` (`echarts_area`).
+     - **Beslediği Superset grafikleri (`viz_type`):** `Ortalama İsraf Oranı` (`big_number_total`), `Toplam Fire Maliyeti` (`big_number_total`), `Satılamayan Ürün Adedi` (`big_number_total`), `En Çok İsraf Edilen Top 10 Ürün` (`echarts_timeseries_bar`), `Kategori Bazlı İsraf Maliyeti Dağılımı` (`pie`), `Haftanın Günlerine Göre İsraf Risk Haritası (%)` (`heatmap_v2`), `Günlük Fire Maliyeti ve İsraf Trendi` (`echarts_area`).
    - `fct_ideal_uretim_tavsiyesi`: Mağaza × ürün × haftanın günü düzeyinde üretim tavsiyesi (735 satır).
      - **dbt SQL çıktı kolonları:** `tavsiye_id`, `magaza_id`, `urun_adi`, `kategori`, `bozulabilirlik`, `raf_omru_gun`, `saklama_tipi`, `haftanin_gunu`, `haftanin_gunu_no`, `hafta_sonu_mu`, `gozlem_sayisi`, `ortalama_gunluk_satis`, `min_gunluk_satis`, `max_gunluk_satis`, `ortalama_gecmis_fire_orani`, `guvenlik_stogu_orani`, `tavsiye_edilen_uretim_adedi`, `ortalama_birim_maliyet`, `ortalama_birim_fiyat`, `tahmini_uretim_maliyeti`, `tahmini_potansiyel_ciro`.
      - `guvenlik_stogu_orani` başlangıç politikasıdır: Very High %5, High %7, Medium %10, Low %12. `tavsiye_edilen_uretim_adedi`, geçmiş günlük satış ortalamasına bu oran uygulanıp yukarı yuvarlanarak hesaplanır.
@@ -123,10 +123,14 @@ Aktarım tamamlandığında tüm mart tabloları (`dim_musteriler`, `dim_musteri
 Proje kökünde çalıştırın:
 
 ```bash
-streamlit run app.py
+streamlit run app.py --server.port 8501
 ```
 
-Uygulamayı [http://localhost:8501](http://localhost:8501) adresinde açın.
+İlk çalıştırmada Streamlit e-posta sorarsa alanı boş bırakıp Enter'a basın. Uygulamayı [http://localhost:8501](http://localhost:8501) adresinde açın. Port 8501 doluysa Streamlit hata verir; başka port kullanılırsa CSP, CORS ve Superset embed izinleri yalnızca 8501'e açık olduğundan dashboard gömülemez.
+
+Yeni bir bilgisayarda kurulum için [KURULUM.md](KURULUM.md) dosyasına bakın.
+
+Günlük kullanım için calistir.bat ile başlatın.
 
 ---
 
