@@ -9,7 +9,7 @@ Apache Superset dashboard'ları ve tahmin modelleri için kullanılır.
 Eğitmen onaylı fırın satış veri seti: `data/raw/bakery_sales_dataset.csv`
 
 19.321 satır (sipariş kalemi), 6.576 sipariş, 500 müşteri, 35 ürün ve 3 mağaza içerir; 2023-01-01 ile
-2024-12-31 arasını kapsar. Sütun açıklamaları `docs/veri_sozlugu.md` dosyasındadır.
+2024-12-31 arasını kapsar. Sütun açıklamaları `docs/DATA_DICTIONARY.md` dosyasındadır.
 
 ## Veri akışı ve dbt Veri Ambarı Mimarisi
 
@@ -193,4 +193,4 @@ Konteyner otomatik olarak başlatma adımlarını çalıştırsa da, manuel olar
 ## Dokümantasyon
 
 - `docs/dbt_docs.html`: dbt docs sayfası (indirilip tarayıcıda açılabilir)
-- `docs/veri_sozlugu.md`: veri sözlüğü
+- `docs/DATA_DICTIONARY.md`: veri sözlüğü

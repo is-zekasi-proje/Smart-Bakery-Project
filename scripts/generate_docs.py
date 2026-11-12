@@ -1,14 +1,14 @@
 """
 dbt dokümantasyonunu repoya aktarır:
   1. docs/dbt_docs.html   -> tek dosyalık dbt docs sitesi (tarayıcıda açılır)
-  2. docs/veri_sozlugu.md -> tablo ve sütunların veri sözlüğü
+  2. docs/DATA_DICTIONARY.md -> tablo ve sütunların veri sözlüğü
 
 Çalıştırma (proje kök klasöründen), önce firin_dbt/ içinde dokümantasyon üretilmeli:
     cd firin_dbt && dbt docs generate --static && cd ..
     python scripts/generate_docs.py
 
 Açıklamalar dbt yml dosyalarından okunur. Sözlüğü güncellemek için yml'i düzenleyip
-yukarıdaki iki komutu tekrar çalıştırmak yeterlidir; veri_sozlugu.md elle düzenlenmemelidir.
+yukarıdaki iki komutu tekrar çalıştırmak yeterlidir; DATA_DICTIONARY.md elle düzenlenmemelidir.
 """
 import json
 import shutil
@@ -148,9 +148,8 @@ def main() -> None:
         satirlar.append(f"| `{test['name']}` | {tek_satir(test['description'])} |")
 
     icerik = "\n".join(satirlar) + "\n"
-    (DOCS_DIR / "veri_sozlugu.md").write_text(icerik, encoding="utf-8")
     (DOCS_DIR / "DATA_DICTIONARY.md").write_text(icerik, encoding="utf-8")
-    print(f"Yazıldı: docs/dbt_docs.html, docs/veri_sozlugu.md ve docs/DATA_DICTIONARY.md ({len(TABLO_SIRASI)} tablo)")
+    print(f"Yazıldı: docs/dbt_docs.html ve docs/DATA_DICTIONARY.md ({len(TABLO_SIRASI)} tablo)")
 
 
 if __name__ == "__main__":

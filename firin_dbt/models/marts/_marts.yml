@@ -402,7 +402,7 @@ models:
       - name: guvenlik_stogu_orani
         description: >
           Dengeli başlangıç tamponu (Very High=%5, High=%7, Medium=%10, Low=%12).
-          Fire/raf ömrü verisiyle ayarlanmıştır; stock-out gözlemi olmadığından saha
+          Fire/raf ömrü verisiyle ayarlanmıştır; stock-out gözlemi bulunmadığından saha
           verisiyle doğrulanmalıdır.
       - name: tavsiye_edilen_uretim_adedi
         description: Fırın ustasına tavsiye edilen ideal günlük üretim adedi.
@@ -425,8 +425,8 @@ models:
     description: >
       Müşteri Recency (Yenilik), Frequency (Sıklık) ve Monetary (Parasal Değer) analiz
       tablosu. 500 müşterinin her birine 1-5 arası ntile puanları ve dokuz müşteri segmentinden
-      birini atar. Eşit R/F/M değerleri musteri_id artan sırada; en sık mağaza ve favori ödeme
-      yöntemi eşitlikleri alfabetik ilk değerle çözülür.
+      birini atar. Eşit R/F/M değerleri `musteri_id` artan sırayla çözülür; en sık mağaza ve
+      favori ödeme yöntemi eşitliğinde alfabetik ilk değer seçilir.
     columns:
       - name: musteri_id
         description: Müşteri numarası (tekil).
@@ -514,9 +514,9 @@ models:
         description: R, F ve M skorlarının aritmetik ortalaması.
       - name: rfm_segmenti
         description: >
-          RFM segmenti: Şampiyonlar, Sadık Müşteriler, Yeni Müşteriler, Potansiyel Sadıklar,
+          Müşteri RFM segmenti (Şampiyonlar, Sadık Müşteriler, Yeni Müşteriler, Potansiyel Sadıklar,
           Gelişime Açık, Kaybedilme Riski Yüksek, Dikkat Gerektirenler, Uykudaki Değerliler,
-          Kayıp Müşteriler.
+          Kayıp Müşteriler).
         data_tests:
           - not_null
           - accepted_values:

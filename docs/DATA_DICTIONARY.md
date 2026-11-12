@@ -179,7 +179,7 @@ Müşteri Recency (Yenilik), Frequency (Sıklık) ve Monetary (Parasal Değer) a
 | `m_skoru` | BIGINT | Monetary skoru (1-5; 5 en çok harcayan). | aralık [1, 5], not_null |
 | `rfm_skoru` | VARCHAR | Üç haneli birleşik RFM skor metni (örn. '555', '321'). |  |
 | `rfm_ortalama_skor` | DECIMAL(3,2) | R, F ve M skorlarının aritmetik ortalaması. |  |
-| `rfm_segmenti` | VARCHAR | Müşteri RFM segmenti (Şampiyonlar, Sadık Müşteriler, Yeni Müşteriler, Potansiyel Sadıklar, Gelişime Açık, Kaybedilme Riski Yüksek, Dikkat Gerektirenler, Uykudaki Değerliler, Kayıp Müşteriler). | not_null |
+| `rfm_segmenti` | VARCHAR | Müşteri RFM segmenti (Şampiyonlar, Sadık Müşteriler, Yeni Müşteriler, Potansiyel Sadıklar, Gelişime Açık, Kaybedilme Riski Yüksek, Dikkat Gerektirenler, Uykudaki Değerliler, Kayıp Müşteriler). | accepted_values, not_null |
 
 ## dim_urunler
 
@@ -290,5 +290,7 @@ Sütun testlerine ek olarak `firin_dbt/tests/` klasöründeki testler:
 | Test | Açıklama |
 |---|---|
 | `assert_fct_staging_mutabakati` | Mutabakat: fct_satislar ile staging aynı satır sayısına ve ciroya sahip olmalıdır (dönüşümde satır kaybı veya çoğalması yok). |
+| `assert_ideal_uretim_is_kurallari` | Güvenlik stoku oranı bozulabilirlik seviyesine ve önerilen üretim miktarı formüle uymalıdır. |
 | `assert_musteri_harcamasi_mutabakati` | Mutabakat: dim_musteriler'deki toplam harcama ve sipariş sayısı fct_satislar ile aynı olmalıdır (müşteri özetinde join kaynaklı çoğalma yok). |
+| `assert_rfm_tum_segmentler_dolu` | Dokuz RFM segmentinin her birinde en az bir müşteri bulunmalıdır. |
 | `assert_tutar_ve_kar_tutarli` | İş kuralı: her kalemde toplam_tutar = satis_fiyati * adet ve kar = toplam_tutar - toplam_maliyet olmalıdır. |
