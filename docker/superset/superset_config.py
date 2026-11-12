@@ -10,32 +10,31 @@ FAVICON_PATH = os.environ.get("FAVICON_PATH", "/static/assets/images/favicon.png
 # =============================================================================
 # 2. Güvenlik ve Gizli Anahtarlar
 # =============================================================================
-# Superset Güvenlik Anahtarı (Oturum ve çerez şifreleme)
-SECRET_KEY = os.environ.get(
-    "SUPERSET_SECRET_KEY", "smart_bakery_secret_key_superset_2024!"
-)
+SECRET_KEY = os.environ["SUPERSET_SECRET_KEY"]
 
 # Web sunucu portu
 SUPERSET_WEBSERVER_PORT = 8088
 
-# Yerel geliştirme ortamı için Talisman HTTPS zorunluluğunu devre dışı bırak
-TALISMAN_ENABLED = False
+TALISMAN_ENABLED = True
+# Local HTTP only; enable secure cookies and HTTPS redirection when using HTTPS.
+TALISMAN_CONFIG = {
+    "force_https": False,
+    "session_cookie_secure": False,
+    "content_security_policy": {
+        "frame-ancestors": ["http://localhost:8501"],
+    },
+    "frame_options": None,
+}
 WTF_CSRF_ENABLED = True
 
 # =============================================================================
-# 3. Iframe ve Gömme (Embedding) Güvenliği
+# 3. Gömme (Embedding) Güvenliği
 # =============================================================================
-# Streamlit veya harici web uygulamasından panoları gömebilmek (iframe) için izinler
-HTTP_HEADERS = {"X-Frame-Options": "ALLOWALL"}
-OVERRIDE_HTTP_HEADERS = {"X-Frame-Options": "ALLOWALL"}
-
-# Guest Token (Konuk Belirteci) Ayarları
-GUEST_ROLE_NAME = "Gamma"
-GUEST_TOKEN_JWT_SECRET = os.environ.get(
-    "GUEST_TOKEN_JWT_SECRET", "smart_bakery_guest_token_secret_jwt_2024!"
-)
+GUEST_ROLE_NAME = "GuestViewer"
+GUEST_TOKEN_JWT_SECRET = os.environ["GUEST_TOKEN_JWT_SECRET"]
 GUEST_TOKEN_JWT_ALGO = "HS256"
-GUEST_TOKEN_JWT_EXP_SECONDS = 3600
+GUEST_TOKEN_HEADER_NAME = "X-GuestToken"
+GUEST_TOKEN_JWT_EXP_SECONDS = 300
 
 # =============================================================================
 # 4. CORS (Cross-Origin Resource Sharing) Yapılandırması
@@ -45,11 +44,9 @@ CORS_OPTIONS = {
     "supports_credentials": True,
     "allow_headers": ["*"],
     "resources": ["*"],
-    "origins": [
-        "http://localhost:8501",  # Streamlit
-        "http://localhost:3000",  # Harici Web / React
-    ],
+    "origins": ["http://localhost:8501"],
 }
+PUBLIC_ROLE_PERMISSIONS = []
 
 # =============================================================================
 # 5. Dil Desteği (Localization / Dil)
@@ -74,11 +71,7 @@ FEATURE_FLAGS = {
 # =============================================================================
 # 7. Veritabanı ve Önbellek (PostgreSQL & Redis)
 # =============================================================================
-# Superset Metadata Veritabanı URI
-SQLALCHEMY_DATABASE_URI = os.environ.get(
-    "SQLALCHEMY_DATABASE_URI",
-    "postgresql+psycopg2://postgres:postgres@postgres:5432/superset",
-)
+SQLALCHEMY_DATABASE_URI = os.environ["SQLALCHEMY_DATABASE_URI"]
 
 # Redis Önbellek Yapılandırması
 REDIS_HOST = os.environ.get("REDIS_HOST", "redis")

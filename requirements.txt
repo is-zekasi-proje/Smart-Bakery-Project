@@ -8,3 +8,6 @@ pyarrow==26.0.0
 # Veritabanı ve Aktarım Katmanı (PostgreSQL & SQLAlchemy)
 psycopg2-binary>=2.9.9
 sqlalchemy>=2.0.0
+streamlit
+requests>=2.32.0
+python-dotenv>=1.0.1

@@ -11,7 +11,7 @@ services:
     environment:
       POSTGRES_DB: smartbakery_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "5433:5432"
@@ -50,7 +50,7 @@ services:
   # 3. Apache Superset Başlatma ve Migrasyon (Init) Servisi
   # =========================================================================
   # Superset ilk çalıştığında veritabanı şemasını günceller, admin kullanıcısını
-  # (admin / admin) oluşturur ve varsayılan rolleri/izinleri yapılandırır.
+  # ortam değişkeniyle oluşturur ve varsayılan rolleri/izinleri yapılandırır.
   superset-init:
     image: smartbakery-superset:latest
     build:
@@ -63,8 +63,10 @@ services:
       redis:
         condition: service_healthy
     environment:
-      SUPERSET_SECRET_KEY: "smart_bakery_secret_key_superset_2024!"
-      SQLALCHEMY_DATABASE_URI: "postgresql+psycopg2://postgres:postgres@postgres:5432/superset"
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:?Set SUPERSET_SECRET_KEY in .env}
+      GUEST_TOKEN_JWT_SECRET: ${GUEST_TOKEN_JWT_SECRET:?Set GUEST_TOKEN_JWT_SECRET in .env}
+      SUPERSET_ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD:?Set SUPERSET_ADMIN_PASSWORD in .env}
+      SQLALCHEMY_DATABASE_URI: "postgresql+psycopg2://postgres:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/superset"
       REDIS_HOST: "redis"
       REDIS_PORT: "6379"
     volumes:
@@ -75,7 +77,7 @@ services:
       echo 'Superset veritabani semasi guncelleniyor (db upgrade)...';
       superset db upgrade;
       echo 'Superset admin kullanicisi olusturuluyor...';
-      superset fab create-admin --username admin --firstname Superset --lastname Admin --email admin@smartbakery.com --password admin || true;
+      superset fab create-admin --username admin --firstname Superset --lastname Admin --email admin@smartbakery.com --password "$$SUPERSET_ADMIN_PASSWORD" || true;
       echo 'Superset roller ve izinler yukleniyor (superset init)...';
       superset init;
       echo 'Superset basariyla hazirlandi!';
@@ -105,11 +107,11 @@ services:
       superset-init:
         condition: service_completed_successfully
     environment:
-      SUPERSET_SECRET_KEY: "smart_bakery_secret_key_superset_2024!"
-      SQLALCHEMY_DATABASE_URI: "postgresql+psycopg2://postgres:postgres@postgres:5432/superset"
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:?Set SUPERSET_SECRET_KEY in .env}
+      GUEST_TOKEN_JWT_SECRET: ${GUEST_TOKEN_JWT_SECRET:?Set GUEST_TOKEN_JWT_SECRET in .env}
+      SQLALCHEMY_DATABASE_URI: "postgresql+psycopg2://postgres:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/superset"
       REDIS_HOST: "redis"
       REDIS_PORT: "6379"
-      TALISMAN_ENABLED: "False"
     volumes:
       - ./docker/superset/superset_config.py:/app/pythonpath/superset_config.py:ro
       - superset_home:/app/superset_home

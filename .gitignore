@@ -1,6 +1,7 @@
 # Python sanal ortamı
 .venv/
 __pycache__/
+.env
 
 # DuckDB veritabanı (scripts/load_raw_data.py ile yeniden üretilir)
 data/*.duckdb
